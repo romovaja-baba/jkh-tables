@@ -1,0 +1,56 @@
+export const theme = {
+  colors: {
+    primary: '#4F46E5',
+    primaryHover: '#4338CA',
+    primaryLight: '#F7F8F9',
+    danger: '#EF4444',
+    dangerHover: '#DC2626',
+    dangerLight: '#FEF2F2',
+    text: '#1F2937',
+    textSecondary: '#6B7280',
+    textMuted: '#9CA3AF',
+    background: '#F3F4F6',
+    surface: '#FFFFFF',
+    border: '#E5E7EB',
+    borderHover: '#D1D5DB',
+    headerBg: '#F0F3F7',
+    loading: '#9CA3AF',
+    error: '#EF4444',
+    success: '#10B981',
+  },
+  spacing: {
+    xs: '4px',
+    sm: '8px',
+    md: '16px',
+    lg: '24px',
+    xl: '32px',
+    xxl: '48px',
+  },
+  borderRadius: {
+    sm: '6px',
+    md: '8px',
+    lg: '12px',
+    xl: '16px',
+  },
+  fontSize: {
+    sm: '13px',
+    md: '14px',
+    lg: '16px',
+    xl: '20px',
+    xxl: '24px',
+  },
+  fontWeight: {
+    normal: 400,
+    medium: 500,
+    semibold: 600,
+    bold: 700,
+  },
+  shadow: {
+    sm: '0 1px 2px rgba(0,0,0,0.05)',
+    md: '0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06)',
+    lg: '0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1)',
+  },
+  transition: '150ms ease',
+} as const;
+
+export type Theme = typeof theme;
