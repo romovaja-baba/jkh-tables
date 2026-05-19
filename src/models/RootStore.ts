@@ -9,9 +9,14 @@ export const RootStore = types
     addAreas(
       areas: Array<{
         id: string;
-        street: string;
-        building: string;
-        apartment: string;
+        number: number;
+        str_number: string;
+        str_number_full: string;
+        house: {
+          address: string;
+          id: string;
+          fias_addrobjs: string[];
+        };
       }>
     ) {
       areas.forEach((area) => {

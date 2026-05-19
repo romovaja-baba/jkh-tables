@@ -3,6 +3,8 @@ export const theme = {
     primary: '#4F46E5',
     primaryHover: '#4338CA',
     primaryLight: '#F7F8F9',
+    secondaryHover: '#F2F5F8',
+    secondaryBorder: '#CED5DE',
     danger: '#EF4444',
     dangerHover: '#DC2626',
     dangerLight: '#FEF2F2',

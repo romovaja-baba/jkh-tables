@@ -7,12 +7,13 @@ import {
 } from '@tanstack/react-table';
 import styled from 'styled-components';
 import { theme } from '../styles/theme';
-import type { Meter } from '../api/metersApi';
 import { useRootStore } from '../context/RootStoreContext';
 import { observer } from 'mobx-react-lite';
 import hvsIcon from '../assets/hvs.svg?url';
 import gvsIcon from '../assets/gvs.svg?url';
 import trashIcon from '../assets/trash.svg?url';
+import type { Meter } from '../api/metersApi';
+import { AreaMeterCategory } from '../models/Area';
 
 const typeIcons: Record<string, string> = {
   ColdWaterAreaMeter: hvsIcon,
@@ -22,11 +23,11 @@ const typeIcons: Record<string, string> = {
 interface MeterRow {
   order: number;
   type: string;
-  rawType: string;
+  rawType: AreaMeterCategory;
   installationDate: string;
   isAutomatic: boolean;
   initialValues: string;
-  address: string;
+  areaId: string;
   description: string;
   id: string;
 }
@@ -58,17 +59,22 @@ const DeleteButton = observer(
 );
 
 const TableWrapper = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   background: ${theme.colors.surface};
   border: 1px solid ${theme.colors.border};
   border-radius: ${theme.borderRadius.lg};
   box-shadow: ${theme.shadow.md};
   overflow: hidden;
+  min-height: 0;
 `;
 
 const ScrollContainer = styled.div`
+  flex: 1;
+  overflow-y: auto;
   overflow-x: auto;
 `;
-
 const StyledTable = styled.table`
   width: 100%;
   border-collapse: collapse;
@@ -146,6 +152,7 @@ const StyledDeleteBtn = styled.button`
 `;
 
 const LoadingState = styled.div`
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -158,6 +165,7 @@ const LoadingState = styled.div`
 `;
 
 const ErrorState = styled.div`
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -175,26 +183,21 @@ export const MetersTable = observer(
 
     const data = useMemo<MeterRow[]>(
       () =>
-        meters.map((m, idx) => {
-          const area = areasMap.get(m.area.id);
-          const addressStr = area
-            ? `${area.street}, д. ${area.building}, кв. ${area.apartment}`
-            : 'Загрузка...';
-          return {
-            order: offset * 20 + idx + 1,
-            type: m._type === 'ColdWaterAreaMeter' ? 'ХВС' : 'ГВС',
-            rawType: m._type,
-            installationDate: new Date(m.installation_date).toLocaleDateString(
-              'ru'
-            ),
-            isAutomatic: m.is_automatic,
-            initialValues: m.initial_values.join(', '),
-            address: addressStr,
-            description: m.description,
-            id: m.id,
-          };
-        }),
-      [meters, areasMap, offset]
+        meters.map((m, idx) => ({
+          order: offset * 20 + idx + 1,
+          type:
+            m._type[0] === AreaMeterCategory.ColdWaterAreaMeter ? 'ХВС' : 'ГВС',
+          rawType: m._type[0],
+          installationDate: new Date(m.installation_date).toLocaleDateString(
+            'ru'
+          ),
+          isAutomatic: m.is_automatic,
+          initialValues: m.initial_values.join(', '),
+          areaId: m.area.id,
+          description: m.description,
+          id: m.id,
+        })),
+      [meters, offset]
     );
 
     const columns = useMemo(
@@ -206,7 +209,7 @@ export const MetersTable = observer(
         columnHelper.accessor('type', {
           header: 'Тип',
           cell: (info) => {
-            const iconSrc = typeIcons[info.row.original.rawType[0]];
+            const iconSrc = typeIcons[info.row.original.rawType];
             return (
               <TypeCell>
                 {iconSrc && (
@@ -225,7 +228,16 @@ export const MetersTable = observer(
           cell: (info) => (info.getValue() ? 'Да' : 'Нет'),
         }),
         columnHelper.accessor('initialValues', { header: 'Значение' }),
-        columnHelper.accessor('address', { header: 'Адрес' }),
+        columnHelper.display({
+          id: 'address',
+          header: 'Адрес',
+          cell: ({ row }) => {
+            const area = areasMap.get(row.original.areaId);
+            return area
+              ? `${area.house.address}, ${area.str_number_full}`
+              : 'Загрузка...';
+          },
+        }),
         columnHelper.accessor('description', { header: 'Примечание' }),
         columnHelper.display({
           id: 'delete',
@@ -235,7 +247,7 @@ export const MetersTable = observer(
           ),
         }),
       ],
-      [deleteMeter]
+      [deleteMeter, areasMap]
     );
 
     const table = useReactTable({

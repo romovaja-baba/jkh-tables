@@ -1,10 +1,14 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import styled from 'styled-components';
 import { theme } from '../styles/theme';
 import { MetersTable } from '../components/MetersTable';
 import { useMetersPage } from '../hooks/useMetersPage';
+import { getPageNumbers } from '../helper';
 
 const PageContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
   max-width: 1200px;
   margin: 0 auto;
   padding: ${theme.spacing.xl} ${theme.spacing.md};
@@ -23,49 +27,47 @@ const Title = styled.h1`
   color: ${theme.colors.text};
 `;
 
-const Pagination = styled.div`
+const PaginationContainer = styled.div`
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: ${theme.spacing.md};
+  gap: ${theme.spacing.xs};
   margin-top: ${theme.spacing.lg};
-  padding: ${theme.spacing.md};
+  align-self: flex-end;
 `;
 
-const PaginationButton = styled.button<{ $disabled?: boolean }>`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: ${theme.spacing.xs};
-  padding: ${theme.spacing.sm} ${theme.spacing.md};
+const PaginationButton = styled.button<{ $active?: boolean }>`
+  min-width: 32px;
+  padding: ${theme.spacing.xs} ${theme.spacing.sm};
   font-size: ${theme.fontSize.md};
   font-weight: ${theme.fontWeight.medium};
-  color: ${(props) =>
-    props.$disabled ? theme.colors.textMuted : theme.colors.primary};
-  background: ${theme.colors.surface};
-  border: 1px solid
-    ${(props) => (props.$disabled ? theme.colors.border : theme.colors.primary)};
+  background: ${(props) =>
+    props.$active ? theme.colors.secondaryHover : theme.colors.surface};
+  border: 1px solid ${theme.colors.secondaryBorder};
   border-radius: ${theme.borderRadius.md};
-  cursor: ${(props) => (props.$disabled ? 'not-allowed' : 'pointer')};
+  cursor: ${(props) => (props.$active ? 'default' : 'pointer')};
   transition: all ${theme.transition};
-  opacity: ${(props) => (props.$disabled ? 0.5 : 1)};
 
   &:hover:not(:disabled) {
-    background: ${theme.colors.primaryLight};
-    border-color: ${theme.colors.primaryHover};
+    background: ${(props) =>
+      props.$active ? theme.colors.secondaryHover : theme.colors.primaryLight};
   }
 
   &:active:not(:disabled) {
     transform: scale(0.97);
   }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
 `;
 
-const PageIndicator = styled.span`
-  font-size: ${theme.fontSize.md};
-  font-weight: ${theme.fontWeight.medium};
-  color: ${theme.colors.textSecondary};
-  min-width: 120px;
+const Ellipsis = styled.span`
+  min-width: 32px;
   text-align: center;
+  color: ${theme.colors.textSecondary};
+  font-size: ${theme.fontSize.md};
+  user-select: none;
 `;
 
 export const MetersPage = () => {
@@ -75,6 +77,11 @@ export const MetersPage = () => {
 
   const currentPage = offset + 1;
   const totalPages = total ? Math.ceil(total / 20) : 1;
+
+  const pageNumbers = useMemo(
+    () => getPageNumbers(currentPage, totalPages),
+    [currentPage, totalPages]
+  );
 
   return (
     <PageContainer>
@@ -90,26 +97,22 @@ export const MetersPage = () => {
         isError={isError}
       />
 
-      {!isLoading && !isError && (
-        <Pagination>
-          <PaginationButton
-            $disabled={offset === 0}
-            onClick={() => setOffset(Math.max(0, offset - 1))}
-            disabled={offset === 0}
-          >
-            ← Назад
-          </PaginationButton>
-          <PageIndicator>
-            Страница {currentPage} из {totalPages}
-          </PageIndicator>
-          <PaginationButton
-            $disabled={(offset + 1) * 20 >= (total ?? 0)}
-            onClick={() => setOffset(offset + 1)}
-            disabled={(offset + 1) * 20 >= (total ?? 0)}
-          >
-            Вперёд →
-          </PaginationButton>
-        </Pagination>
+      {!isLoading && !isError && totalPages > 1 && (
+        <PaginationContainer>
+          {pageNumbers.map((item, idx) =>
+            item === 'ellipsis' ? (
+              <Ellipsis key={`ellipsis-${idx}`}>...</Ellipsis>
+            ) : (
+              <PaginationButton
+                key={item}
+                $active={item === currentPage}
+                onClick={() => setOffset(item - 1)}
+              >
+                {item}
+              </PaginationButton>
+            )
+          )}
+        </PaginationContainer>
       )}
     </PageContainer>
   );
