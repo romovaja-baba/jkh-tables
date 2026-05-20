@@ -1,73 +1,103 @@
-# React + TypeScript + Vite
+# Приложение для учёта счётчиков ЖКХ
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Веб-приложение для просмотра и управления приборами учёта (счётчиками воды) в системе ЖКХ. Построено на React + TypeScript с использованием Vite.
 
-Currently, two official plugins are available:
+## Что используется
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- React 19
+- TypeScript
+- Vite
+- @tanstack/react-table
+- mobx-state-tree
+- styled-components
+- ESLint
 
-## React Compiler
+## Структура проекта
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+src/
+├── api/
+│ ├── constant.ts # Адрес API
+│ ├── areasApi.ts # Загрузка адресов
+│ └── metersApi.ts # Загрузка и удаление счётчиков
+├── assets/ # Иконки (ХВС, ГВС, удаление и т.д.)
+├── components/
+│ └── MetersTable.tsx # Компонент таблицы
+├── context/
+│ └── RootStoreContext.ts # Контекст для хранилища
+├── hooks/
+│ └── useMetersPage.ts # Логика загрузки страницы
+├── models/
+│ ├── Area.ts # Модель помещения
+│ └── RootStore.ts # Главное хранилище
+├── pages/
+│ └── MetersPage.tsx # Страница со счётчиками
+└── styles/
+├── theme.ts # Тема
+└── GlobalStyles.ts # Глобальные стили
 
-## Expanding the ESLint configuration
+text
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Функциональность
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+### Таблица счётчиков
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+Показывает список приборов учёта с колонками:
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+| Колонка        | Что отображается                           |
+| -------------- | ------------------------------------------ |
+| №              | Порядковый номер                           |
+| Тип            | ХВС или ГВС с иконкой                      |
+| Дата установки | Дата установки прибора                     |
+| Автоматический | Да/нет (автопередача)                      |
+| Значение       | Начальные показания                        |
+| Адрес          | Дом, квартира                              |
+| Примечание     | Дополнительная информация                  |
+|                | Кнопка удаления (появляется при наведении) |
+
+### Страницы
+
+- В адресной строке можно передать `page` и `limit`, например `?page=2&limit=20`.
+- Внизу таблицы – переключение страниц (с многоточием, если страниц много).
+- Кнопки «Назад» и «Вперёд» браузера работают как обычно.
+
+### Удаление
+
+- При наведении на строку появляется иконка корзины.
+- После удаления список обновляется.
+
+### Состояния интерфейса
+
+- **Загрузка** — показывается спиннер или надпись «Загрузка...»
+- **Ошибка** — сообщение, если данные не загрузились
+- **Данные** — таблица с информацией
+
+## API
+
+Приложение использует тестовый API по адресу:
+https://showroom.eis24.me/c300/api/v4/test/
+
+text
+
+Эндпоинты:
+
+- `GET /meters/?limit={n}&offset={n}` — список счётчиков
+- `DELETE /meters/{id}/` — удалить счётчик
+- `GET /areas/?id__in=...` — данные об адресах (загружаются по мере необходимости и кешируются)
+
+## Запуск
+
+```bash
+npm install
+npm run dev
+npm run build
+npm run preview
+npm run lint
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Как работает с данными
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Всё состояние хранится в mobx-state-tree (стор RootStore).
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+Адреса кешируются в Map, чтобы не делать лишних запросов.
+
+Стор доступен через React-контекст (RootStoreContext).
