@@ -14,6 +14,7 @@
 
 ## Структура проекта
 
+```
 src/
 ├── api/
 │ ├── constant.ts # Адрес API
@@ -34,6 +35,7 @@ src/
 └── styles/
 ├── theme.ts # Тема
 └── GlobalStyles.ts # Глобальные стили
+```
 
 text
 
