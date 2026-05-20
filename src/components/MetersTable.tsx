@@ -12,8 +12,7 @@ import { observer } from 'mobx-react-lite';
 import hvsIcon from '../assets/hvs.svg?url';
 import gvsIcon from '../assets/gvs.svg?url';
 import trashIcon from '../assets/trash.svg?url';
-import type { Meter } from '../api/metersApi';
-import { AreaMeterCategory } from '../models/Area';
+import { MeterCategory, type Meter } from '../api/metersApi';
 
 const typeIcons: Record<string, string> = {
   ColdWaterAreaMeter: hvsIcon,
@@ -23,7 +22,7 @@ const typeIcons: Record<string, string> = {
 interface MeterRow {
   order: number;
   type: string;
-  rawType: AreaMeterCategory;
+  rawType: MeterCategory;
   installationDate: string;
   isAutomatic: boolean;
   initialValues: string;
@@ -185,8 +184,7 @@ export const MetersTable = observer(
       () =>
         meters.map((m, idx) => ({
           order: offset * 20 + idx + 1,
-          type:
-            m._type[0] === AreaMeterCategory.ColdWaterAreaMeter ? 'ХВС' : 'ГВС',
+          type: m._type[0] === MeterCategory.ColdWaterAreaMeter ? 'ХВС' : 'ГВС',
           rawType: m._type[0],
           installationDate: new Date(m.installation_date).toLocaleDateString(
             'ru'

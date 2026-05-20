@@ -1,9 +1,8 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
 import { theme } from '../styles/theme';
 import { MetersTable } from '../components/MetersTable';
 import { useMetersPage } from '../hooks/useMetersPage';
-import { getPageNumbers } from '../helper';
 
 const PageContainer = styled.div`
   display: flex;
@@ -41,15 +40,15 @@ const PaginationButton = styled.button<{ $active?: boolean }>`
   font-size: ${theme.fontSize.md};
   font-weight: ${theme.fontWeight.medium};
   background: ${(props) =>
-    props.$active ? theme.colors.secondaryHover : theme.colors.surface};
-  border: 1px solid ${theme.colors.secondaryBorder};
+    props.$active ? theme.colors.primaryLight : theme.colors.surface};
+  border: 1px solid
+    ${(props) => (props.$active ? theme.colors.primary : theme.colors.border)};
   border-radius: ${theme.borderRadius.md};
   cursor: ${(props) => (props.$active ? 'default' : 'pointer')};
   transition: all ${theme.transition};
 
   &:hover:not(:disabled) {
-    background: ${(props) =>
-      props.$active ? theme.colors.secondaryHover : theme.colors.primaryLight};
+    background: ${theme.colors.primaryLight};
   }
 
   &:active:not(:disabled) {
@@ -70,18 +69,64 @@ const Ellipsis = styled.span`
   user-select: none;
 `;
 
-export const MetersPage = () => {
-  const [offset, setOffset] = useState(0);
-  const { total, meters, deleteMeter, isLoading, isError } =
-    useMetersPage(offset);
+const DEFAULT_LIMIT = 20;
 
-  const currentPage = offset + 1;
-  const totalPages = total ? Math.ceil(total / 20) : 1;
+function getPageFromQuery(): number {
+  const params = new URLSearchParams(window.location.search);
+  return Math.max(1, parseInt(params.get('page') ?? '1', 10) || 1);
+}
 
-  const pageNumbers = useMemo(
-    () => getPageNumbers(currentPage, totalPages),
-    [currentPage, totalPages]
+function getLimitFromQuery(): number {
+  const params = new URLSearchParams(window.location.search);
+  return Math.max(
+    1,
+    parseInt(params.get('limit') ?? String(DEFAULT_LIMIT), 10) || DEFAULT_LIMIT
   );
+}
+
+function updateQuery(page: number, limit: number) {
+  const url = new URL(window.location.href);
+  url.searchParams.set('page', String(page));
+  url.searchParams.set('limit', String(limit));
+  window.history.replaceState(null, '', url.toString());
+}
+
+export const MetersPage = () => {
+  const [limit] = useState(() => getLimitFromQuery());
+  const [offset, setOffset] = useState(() => {
+    const page = getPageFromQuery();
+    return (page - 1) * limit;
+  });
+
+  const currentPage = offset / limit + 1;
+
+  const { total, meters, deleteMeter, isLoading, isError } = useMetersPage(
+    offset,
+    limit
+  );
+
+  const totalPages = total ? Math.ceil(total / limit) : 1;
+  const pageNumbers = getPageNumbers(currentPage, totalPages);
+
+  const goToPage = useCallback(
+    (page: number) => {
+      setOffset((page - 1) * limit);
+    },
+    [limit]
+  );
+
+  useEffect(() => {
+    updateQuery(currentPage, limit);
+  }, [currentPage, limit]);
+
+  const handlePopState = useCallback(() => {
+    setOffset((getPageFromQuery() - 1) * limit);
+  }, [limit]);
+
+  useEffect(() => {
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [handlePopState]);
 
   return (
     <PageContainer>
@@ -97,7 +142,7 @@ export const MetersPage = () => {
         isError={isError}
       />
 
-      {!isLoading && !isError && totalPages > 1 && (
+      {totalPages > 1 && (
         <PaginationContainer>
           {pageNumbers.map((item, idx) =>
             item === 'ellipsis' ? (
@@ -106,7 +151,7 @@ export const MetersPage = () => {
               <PaginationButton
                 key={item}
                 $active={item === currentPage}
-                onClick={() => setOffset(item - 1)}
+                onClick={() => goToPage(item as number)}
               >
                 {item}
               </PaginationButton>
@@ -117,3 +162,32 @@ export const MetersPage = () => {
     </PageContainer>
   );
 };
+
+function getPageNumbers(
+  current: number,
+  total: number
+): (number | 'ellipsis')[] {
+  if (total <= 7) {
+    return Array.from({ length: total }, (_, i) => i + 1);
+  }
+
+  const pages: (number | 'ellipsis')[] = [1];
+
+  if (current > 3) {
+    pages.push('ellipsis');
+  }
+
+  const start = Math.max(2, current - 1);
+  const end = Math.min(total - 1, current + 1);
+
+  for (let i = start; i <= end; i++) {
+    pages.push(i);
+  }
+
+  if (current < total - 2) {
+    pages.push('ellipsis');
+  }
+
+  pages.push(total);
+  return pages;
+}

@@ -1,10 +1,4 @@
-import { types, flow } from 'mobx-state-tree';
-import { fetchAreas, type Area } from '../api/areasApi';
-
-export enum AreaMeterCategory {
-  ColdWaterAreaMeter = 'ColdWaterAreaMeter',
-  HotWaterAreaMeter = 'HotWaterAreaMeter',
-}
+import { types } from 'mobx-state-tree';
 
 export const AreaModel = types.model('Area', {
   id: types.identifier,
@@ -17,22 +11,3 @@ export const AreaModel = types.model('Area', {
     fias_addrobjs: types.array(types.string),
   }),
 });
-
-export const AreasStore = types
-  .model('AreasStore', {
-    areasMap: types.map(AreaModel),
-  })
-  .actions((self) => ({
-    fetchAreasIfNeeded: flow(function* (ids: string[]) {
-      const uniqueIds = [...new Set(ids)];
-      const toFetch = uniqueIds.filter((id) => !self.areasMap.has(id));
-      if (toFetch.length === 0) return;
-
-      try {
-        const areas: Area[] = yield fetchAreas(toFetch);
-        areas.forEach((area) => self.areasMap.put(area));
-      } catch (e) {
-        console.error('Ошибка загрузки адресов', e);
-      }
-    }),
-  }));
